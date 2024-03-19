@@ -104,7 +104,7 @@ class ContentRetriever(File_Dialoger):
             return json.loads(content)
     
     def retrieve_one(self, label, prompt, inplace=True):
-        
+        pass
         
     def label_empty_content(self, empty_label=None):
         if empty_label is None:
