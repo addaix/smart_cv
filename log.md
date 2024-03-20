@@ -1,4 +1,15 @@
 # 20:03:2024
+Issue : LLM response is to general, it needs to get aware of our jargon
+example : when asking for DepSecOps skills it returns: web development, Information system ...
+We would expect gitlabci, helm-chart, terraform, Kubernetes, docker, docker-compose,etc...
+
+Suggestions: 
+- give as context a jargon for every job category but suppose to list a finite number of jobs and list stacks
+- Learn a representation of kewords and job category from corpus of DTs.
+- Fine tunning => build a dataset. How? What?
+
+TODO : evaluation pipeline
+____________________
 
 Issues: Parsing LLM response to get a mapping
 
