@@ -8,4 +8,4 @@ CV templates, and extracting information from CV documents.
 from smart_cv.base import CvsInfoStore, CvsFilesReader
 from smart_cv.ResumeParser import ContentRetriever
 from smart_cv.ResumeParser import TemplateFiller
-from smart_cv.CriteriaChecker import CriteriaChecker
+
