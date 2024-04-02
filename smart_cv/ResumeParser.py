@@ -27,6 +27,21 @@ def get_chunk_size(cv_len, cv_tokens, prompt_tokens, max_tokens):
         nb_chunks = cv_tokens//(max_tokens-prompt_tokens) + 1
     return cv_len//nb_chunks
 
+def replace_none_in_json(json_data, empty_label="To be completed"):
+        if isinstance(json_data, dict):
+            for key in json_data:
+                if json_data[key] == "none":
+                    json_data[key] = empty_label
+                else:
+                    replace_none_in_json(json_data[key], empty_label)
+        elif isinstance(json_data, list):
+            for i in range(len(json_data)):
+                if isinstance(json_data[i], str) and "none" in json_data[i].lower():
+                    json_data[i] = json_data[i].replace("none", empty_label)
+                else:
+                    replace_none_in_json(json_data[i], empty_label)
+        return json_data
+
 class ContentRetriever(File_Dialoger):
     """ Class to parse a resume and fill a template with the information retrieved by LLM API requests.
     Args:
@@ -53,7 +68,6 @@ class ContentRetriever(File_Dialoger):
         chunk_size = get_chunk_size(len(content), cv_tokens, prompt_tokens, max_tokens)
         self.db = ChunkDB({self._cv_path: content}, chunk_size=chunk_size, chunk_overlap=chunk_overlap)
         super().__init__(api_key=api_key, retrieve=False)
-        self.build_chain()
 
         debug(f"Chunk size: {chunk_size}")
     
@@ -85,19 +99,20 @@ class ContentRetriever(File_Dialoger):
                         "skills": "Python, SQL, Machine Learning, NLP",
                         "certifications": "DataCamp, Coursera",
                         "experiences": [
-                            -    "title": "Data Scientist",
-                                "company": "Google",
-                                "date": "2020-2021",
-                                "description": "Worked on the recommendation system of Youtube.",
-                                "tasks": "Data cleaning of the dataset, Building the model, Testing the model, etc...",
-                                "tools": "Python, TensorFlow, Pandas, Numpy, etc...",
-                            -   "title": "Data Analyst",
+                            {{"title": "Apprentice data analyst",
                                 "company": "Facebook",
-                                "date": "2019-2020",
+                                "dates": "2020-2023",
                                 "description": "Worked on the user behavior analysis.",
                                 "tasks": "Data cleaning of the dataset, Building the model, Testing the model, etc...",
-                                "tools": "Python, TensorFlow, Pandas, Numpy, etc...",
-                            - "etc..."
+                                "tools": "Python, TensorFlow, Pandas, Numpy, etc..."}},
+                            {{   "title": "Data Scientist intern",
+                                "company": "Google",
+                                "dates": "2020 - 3 months",
+                                "description": "Worked on the recommendation system of Youtube.",
+                                "tasks": "Data cleaning of the dataset, Building the model, Testing the model, etc...",
+                                "tools": "Python, TensorFlow, Pandas, Numpy, etc..."}},
+                            - {{"etc..."}}
+                        ],
                         "personal_projects": "Chatbot, face recognition",
                         "languages": "English(C1), French, Spanish (B2)", 
                         "education": [
@@ -193,10 +208,11 @@ class ContentRetriever(File_Dialoger):
     def has_content_labelling(self):
         for k in self.optional_content:
             v = self.dict_content[k]
-            if isinstance(v, str) and "none" in v:
-                self.dict_content["has_"+k] = False
-            else:
-                self.dict_content["has_"+k] = True
+            if isinstance(v, str):
+                if "none" in v.lower():
+                    self.dict_content["has_"+k] = False
+                else:
+                    self.dict_content["has_"+k] = True                
     
     def retrieve_one(self, label, prompt=None, inplace=True):
         """Retrieve the information for the given label and put it in the dict_content if inplace is True. Else return the content."""
@@ -218,13 +234,9 @@ class ContentRetriever(File_Dialoger):
         """Load the information from a json file."""
         with open(content_path, "r") as f:
             self.dict_content = json.load(f)
-
-    def label_empty_content(self, empty_label=None):
-        if empty_label is None:
-            self.__empty_label = "To be completed"
-        for k, v in self.dict_content.items():
-            if isinstance(v, str) and v=="none":
-                self.dict_content[k]= v.replace("none", self.__empty_label)
+    
+    def label_empty_content(self,empty_label="To be completed"):
+        self.dict_content = replace_none_in_json(self.dict_content, empty_label)
     
     def print_content(self, content_label=None):
         if content_label is not None:
