@@ -8,7 +8,7 @@ from langchain_core.vectorstores import VectorStore
 from langchain_community.vectorstores.chroma import Chroma
 from operator import itemgetter
 from langchain_community.document_loaders import DirectoryLoader
-
+from langchain_community.document_loaders.word_document import Docx2txtLoader
 class File_Dialoger:
     """Class to handle file dialog using RAG and prompts"""
     def __init__(self, document_path=None, api_key=None, retrieve=False, **kwargs):
@@ -37,6 +37,8 @@ class File_Dialoger:
         # TODO : Add support for other file types
         if document_path.endswith(".pdf"):
             loader =PyPDFLoader(document_path)
+        elif document_path.endswith(".docx"):
+            loader = Docx2txtLoader(document_path)
         
         # If it's a directory, load all the pdfs in the directory
         else:
@@ -78,7 +80,8 @@ class File_Dialoger:
             )
 
     def ask_question(self, question, context=None):
-        assert hasattr(self, 'chain'), "Chain is not set. Please set it with build_chain method."
+        if not hasattr(self, 'chain'):
+            self.build_chain()
         if not self.retrieve:
             response = self.chain.invoke(question)
         else:
