@@ -13,4 +13,4 @@
 "optional_content": ["certifications", "personal_projects", "interests"],
 "empty_label": "To be filled",
 "template_path": "../smart_cv/data/DT_Template.docx", 
-"api_key": "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"}
+"api_key": "your_key"}
