@@ -1,6 +1,6 @@
 """Interface objects"""
 
-from typing import Optional
+from typing import Optional, MutableMapping, Union
 from smart_cv.base import dflt_config, get_config
 from smart_cv.ResumeParser import ContentRetriever, TemplateFiller
 from smart_cv.util import return_save_bytes
@@ -28,7 +28,7 @@ def _mk_parser(
 
 def process_cv(
     cv_path: str,
-    filled_filepath: Optional[str] = None,
+    save_to: Optional[Union[str, MutableMapping]] = None,
     *,
     dt_template_path: str = config["template_path"],
     chunk_overlap: int = config.get("chunk_overlap", 50),
@@ -49,8 +49,17 @@ def process_cv(
 
     save_bytes = return_save_bytes(filler.save_template)
 
-    if filled_filepath is not None:
-        with open(filled_filepath, "wb") as f:
-            f.write(save_bytes)
+    if save_to is not None:
+        if isinstance(save_to, str):
+            filepath = save_to
+            with open(filepath, "wb") as f:
+                f.write(save_bytes)
+        elif isinstance(save_to, MutableMapping):
+            # compute save_key by replacing the cv_path filename 
+            # extension with docx extension
+            cv_path_filename = cv_path.split('/')[-1]
+            save_key = cv_path_filename.replace('.pdf', '.docx')
+            # get the filename only
+            save_to[save_key] = save_bytes
 
     return save_bytes
