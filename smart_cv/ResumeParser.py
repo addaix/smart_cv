@@ -1,4 +1,4 @@
-from docxtpl import DocxTemplate
+from docxtpl import DocxTemplate  # pip install docxtpl
 from tqdm import tqdm
 import os
 import json
