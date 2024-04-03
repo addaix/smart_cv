@@ -21,6 +21,7 @@ pkg_name = "smart_cv"
 # The following is the original way, due to be replaced by the next "app folder" way
 pkg_files = files(pkg_name)
 pkg_data_files = pkg_files / "data"
+pkg_data_path = str(pkg_data_files)
 pkg_files_path = str(pkg_files)
 pkg_config_path = str(pkg_data_files / "config.json")
 pkg_dt_template_path = str(pkg_data_files / 'DT_Template.docx')
@@ -37,6 +38,21 @@ app_dir = get_app_data_folder(pkg_name, ensure_exists=True)
 app_filepath = partial(process_path, ensure_dir_exists=True, rootdir=app_dir)
 data_dir = app_filepath('data')
 
+
+def return_save_bytes(save_function):
+    """Return bytes from a save function.
+
+    :param save_function: A function that saves to a file-like object
+    :return: The serialization bytes
+
+    """
+    import io
+
+    io_target = io.BytesIO()
+    with io_target as f:
+        save_function(f)
+        io_target.seek(0)
+        return io_target.read()
 
 
 def read_config(config_file: str) -> dict:
@@ -59,7 +75,10 @@ def num_tokens_from_string(string: str, encoding_name: str = "cl100k_base") -> i
     num_tokens = len(encoding.encode(string))
     return num_tokens
 
+
 from docx import Document
+
+
 def load_full_text(doc: str):
     text = ""
     if doc.endswith(".docx"):
@@ -71,7 +90,8 @@ def load_full_text(doc: str):
             pdf = PdfReader(f)
             for page in pdf.pages:  # Iterate over pages directly
                 text += page.extract_text()
-    return text     
+    return text
+
 
 def num_tokens_doc(doc: str, encoding_name: str = "cl100k_base") -> int:
     return num_tokens_from_string(load_full_text(doc), encoding_name)

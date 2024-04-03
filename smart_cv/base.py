@@ -10,7 +10,7 @@ from config2py import (
     user_gettable,
     get_config as config_getter_factory,
 )
-from smart_cv.util import app_filepath, pkg_config_path, pkg_files_path
+from smart_cv.util import app_filepath, pkg_config_path, pkg_data_path
 
 
 @add_ipython_key_completions
@@ -35,17 +35,23 @@ mall = Namespace(
     cvs_info=CvsInfoStore(app_filepath('data', 'cvs_info')),
     filled=Files(app_filepath('data', 'filled')),
     configs=TextFiles(app_filepath('configs')),
-    pkg_files=Files(pkg_files_path),
+    pkg_data_store=Files(pkg_data_path),
 )
 
 
 # -----------------------------------------------------------
 # Configs
 from collections import ChainMap
+from smart_cv.util import pkg_data_files
+
+pkg_defaults = {
+    'template_path': str(pkg_data_files / 'DT_Template.docx'),
+}
 
 config_sources = [
-    json.loads(pathlib.Path(pkg_config_path).read_text()),
-    mall.configs,
+    mall.configs,  # user local configs
+    json.loads(pathlib.Path(pkg_config_path).read_text()),  # package config.json
+    pkg_defaults,  # package defaults
 ]
 
 dflt_config = ChainMap(*config_sources)  # a config mapping
