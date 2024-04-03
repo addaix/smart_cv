@@ -19,9 +19,11 @@ pkg_name = "smart_cv"
 # Paths and stores
 
 # The following is the original way, due to be replaced by the next "app folder" way
-proj_files = files(pkg_name)
-pkg_data_files = proj_files / "data"
+pkg_files = files(pkg_name)
+pkg_data_files = pkg_files / "data"
+pkg_files_path = str(pkg_files)
 pkg_config_path = str(pkg_data_files / "config.json")
+pkg_dt_template_path = str(pkg_data_files / 'DT_Template.docx')
 
 # cvs_files = data_files / "cvs"
 # cvs_info_files = data_files / "cvs_info"

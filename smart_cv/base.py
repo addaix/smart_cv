@@ -6,11 +6,11 @@ import pathlib
 from i2 import Namespace
 from pdfdol import PdfFilesReader
 from dol import Files, TextFiles
-from smart_cv.util import app_filepath, pkg_config_path
 from config2py import (
     user_gettable,
     get_config as config_getter_factory,
 )
+from smart_cv.util import app_filepath, pkg_config_path, pkg_files_path
 
 
 @add_ipython_key_completions
@@ -35,6 +35,7 @@ mall = Namespace(
     cvs_info=CvsInfoStore(app_filepath('data', 'cvs_info')),
     filled=Files(app_filepath('data', 'filled')),
     configs=TextFiles(app_filepath('configs')),
+    pkg_files=Files(pkg_files_path),
 )
 
 
