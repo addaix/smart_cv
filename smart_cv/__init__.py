@@ -5,7 +5,6 @@ This package contains modules for parsing and analyzing CV data, generating
 CV templates, and extracting information from CV documents.
 """
 
-from smart_cv.base import CvsInfoStore, CvsFilesReader
+from smart_cv.base import mall, CvsInfoStore, CvsFilesReader, get_config
 from smart_cv.ResumeParser import ContentRetriever
 from smart_cv.ResumeParser import TemplateFiller
-
