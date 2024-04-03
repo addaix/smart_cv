@@ -1,0 +1,13 @@
+Python, C,, Perl, Ruby, MatLab, Mathematica, Assembleur, VB, XML, Java, JEE, J2EE, JavaScript, PHP, R,, CSS, C\+\+, IOS, Swift, Android, Kotlin, Flutter, Dart, Rust, Ionic, Cordova, Reactnative, Xamarin, Babylon.js, C\#, F\#, WordPress, ThreeJS, WebGL,
+
+TensorFlow, Spark, Spring, Angular, Structs, Ember, Vue, Django, React, .NET,, .NET Core, Cocoapods, Osgi, Selenium, QA, Nest, Express, Symphony, Falcon, ASP.NET, WinDev, Flask, PySpark, Hibernate,
+
+Hive, Impala, Oracle, MySQL, Acess, SQL, SQL Server, PostgreSQL, Mongo, MariaDB, DBA,
+
+API, Unit Testing, Test Unitaire, Azure, Docker, Bamboo, Kubernetes, Jenkins, Jasmine, Karma, MVC, AWS,
+
+Git, Tortoise, TFS, CVS, SVN, MVC, GNU RCS, GNU CSSC, CVSNT, GNU arch, Darcs, DCVS, Monotone, Codeville, Mercurial, Bazaar, Fossil, Veracity, Pijul, SCCS, PVCS, Rational ClearCase, Harvest, CMVC, Visual SourceSafe, AccuRev SCM, Sourceanywhere, Team Foundation Server, Rational Synergy, Rational Team Concert, BitKeeper, Plastic SCM, IIS active directory, 2IS,
+
+Datawarehouse, Machine Learning, NLP, DeepLearning, Réseau de Neurones, kNN, k\-NN, Régression Linéaire, SVM, Régression Logistique, Arbre de Décission, Fôrets Aléatoires, gradient boosting, PCA, Analyse en Composantes Principales, DataLake, DataFactory, PowerBI, Tableau, Qlikesense, GCP, OpenCV, Computer Vision, 
+
+Gestion, Organization, Management, Agile, Scrum, Trello, JIRA, MS Project, Confluence, Sprint, GANTT, Specifications, Redaction, Cahier de charges, Workshop, Atelier, AMOA, PMO

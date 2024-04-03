@@ -1,2 +1,5 @@
 # smart_cv
-Tools to retrieve and check information and generate information based on CVs
+Tools to retrieve, check information and generate a docx from a template
+
+- ResumeParser 
+- Information

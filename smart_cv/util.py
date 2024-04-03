@@ -57,21 +57,19 @@ def num_tokens_from_string(string: str, encoding_name: str = "cl100k_base") -> i
     num_tokens = len(encoding.encode(string))
     return num_tokens
 
-
-def num_tokens_doc(doc: str, encoding_name: str = "cl100k_base") -> int:
-    num_tokens = 0
-    with open(doc, "rb") as f:  # Open in binary mode
-        pdf = PdfReader(f)
-        for page in pdf.pages:  # Iterate over pages directly
-            text = page.extract_text()
-            num_tokens += num_tokens_from_string(text, encoding_name)
-    return num_tokens
-
-
+from docx import Document
 def load_full_text(doc: str):
     text = ""
-    with open(doc, "rb") as f:  # Open in binary mode
-        pdf = PdfReader(f)
-        for page in pdf.pages:  # Iterate over pages directly
-            text += page.extract_text()
-    return text
+    if doc.endswith(".docx"):
+        doc = Document(doc)
+        for para in doc.paragraphs:
+            text += para.text
+    elif doc.endswith(".pdf"):
+        with open(doc, "rb") as f:  # Open in binary mode
+            pdf = PdfReader(f)
+            for page in pdf.pages:  # Iterate over pages directly
+                text += page.extract_text()
+    return text     
+
+def num_tokens_doc(doc: str, encoding_name: str = "cl100k_base") -> int:
+    return num_tokens_from_string(load_full_text(doc), encoding_name)
