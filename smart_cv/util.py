@@ -22,7 +22,6 @@ filled_dirpath = str(filled_files)
 
 
 from config2py import simple_config_getter
-
 get_config = simple_config_getter('smart_cv')
 
 
