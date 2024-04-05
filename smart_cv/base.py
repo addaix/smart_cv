@@ -14,13 +14,12 @@ from smart_cv.util import app_filepath, pkg_config_path, pkg_data_path
 
 
 @add_ipython_key_completions
-@wrap_kvs(obj_of_data=json.loads)
+@wrap_kvs(obj_of_data=json.loads) # TODO add reading function for Docx files
 class CvsInfoStore(Files):
     """Get cv info dicts from folder"""
 
     def __init__(self, rootdir, *args, **kwargs):
         super().__init__(rootdir, *args, **kwargs)
-
 
 class CvsFilesReader(PdfFilesReader):
     """Read CV files as text"""
