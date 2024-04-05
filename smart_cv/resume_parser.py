@@ -1,5 +1,4 @@
 from docxtpl import DocxTemplate  # pip install docxtpl
-from tqdm import tqdm
 import os
 import json
 from typing import Mapping, Union, List
@@ -9,9 +8,9 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 parent_path = os.path.abspath(os.path.join(dir_path, os.pardir))
 os.sys.path.append(parent_path)
 print(parent_path)
-from file_dialoger import File_Dialoger
+from file_dialoger import FileDialoger
 from VectorDB import ChunkDB
-from smart_cv.util import num_tokens_doc, num_tokens_from_string, load_full_text
+from smart_cv.util import num_tokens
 
 DEBUG = False
 
@@ -50,7 +49,7 @@ def replace_none_in_json(json_data, empty_label="To be completed"):
     return json_data
 
 
-class ContentRetriever(File_Dialoger):
+class ContentRetriever(FileDialoger):
     """Class to parse a resume and fill a template with the information retrieved by LLM API requests.
     Args:
         cv_path (str): Path to the resume to parse.
@@ -60,37 +59,40 @@ class ContentRetriever(File_Dialoger):
 
     def __init__(
         self,
-        cv_path: str,
-        prompts: Mapping,
+        cv_text: str,
+        prompts: Mapping, 
+        stacks: str,
         api_key: str = None,
+        cv_name: str = "cv",
         optional_content=None,
         **kwargs,
     ):
         self.api_key = api_key
         self.__empty_label = kwargs.get("empty_label", "To be completed")
-        self._cv_path = cv_path
         self.optional_content = optional_content
-
+        self.cv_text = cv_text
         self.dict_content = {}
         self.prompts = prompts
+        self.stacks = stacks
 
-        prompt_tokens = num_tokens_from_string(
+        prompt_tokens = num_tokens(
             self.content_request("", "")
-        ) + num_tokens_from_string(str(self.prompts))
-        cv_tokens = num_tokens_doc(self._cv_path)
+        ) + num_tokens(str(self.prompts))
+        cv_tokens = num_tokens(self.cv_text)
         chunk_overlap = kwargs.get("chunk_overlap", 100)
         max_tokens = 4000  # TODO : Find a way to get the max tokens from the API
 
-        content = load_full_text(self._cv_path)
-        chunk_size = get_chunk_size(len(content), cv_tokens, prompt_tokens, max_tokens)
+        chunk_size = get_chunk_size(len(self.cv_text), cv_tokens, prompt_tokens, max_tokens)
         self.db = ChunkDB(
-            {self._cv_path: content}, chunk_size=chunk_size, chunk_overlap=chunk_overlap
+            {str(kwargs.get('cv_name', 'cv')): self.cv_text}, chunk_size=chunk_size, chunk_overlap=chunk_overlap
         )
         super().__init__(api_key=api_key, retrieve=False)
 
         debug(f"Chunk size: {chunk_size}")
 
-    def content_request(self, json_string=None, chunk_context=None):
+    def content_request(self, json_string=None, chunk_context=None, stacks=None):
+        if stacks is None:
+            stacks = self.stacks
         content_prompt = f"""
                 I will give you a resume and you will fill the provided json. 
                 The keys have to be respected and the corresponding description will be replaced by the retrieved information.
@@ -147,15 +149,9 @@ class ContentRetriever(File_Dialoger):
                 Give directly the json and preserve the format.
 
                 Here is the resume you have to base on: {chunk_context} 
-                                    
+                                   
                 Here are keywords of technical stack that should be found in the resume to fill 'skills': 
-                 C,, Perl, Ruby, MatLab, Mathematica, Assembleur, VB, XML, JEE, J2EE, JavaScript, PHP, R,, CSS, C\+\+, IOS, Swift, Android, Kotlin, Flutter, Dart, Rust, Ionic, Cordova, Reactnative, Xamarin, Babylon.js, C\#, F\#, WordPress, ThreeJS, WebGL,
-                TensorFlow, Spark, Spring, Angular, Structs, Ember, Vue, Django, React, .NET,, .NET Core, Cocoapods, Osgi, Selenium, QA, Nest, Express, Symphony, Falcon, ASP.NET, WinDev, Flask, PySpark, Hibernate,
-                Hive, Impala, Oracle, MySQL, Acess, SQL, SQL Server, PostgreSQL, Mongo, MariaDB, DBA,
-                API, Unit Testing, Test Unitaire, Azure, Docker, Bamboo, Kubernetes, Jenkins, Jasmine, Karma, MVC, AWS,
-                Git, Tortoise, TFS, CVS, SVN, MVC, GNU RCS, GNU CSSC, CVSNT, GNU arch, Darcs, DCVS, Monotone, Codeville, Mercurial, Bazaar, Fossil, Veracity, Pijul, SCCS, PVCS, Rational ClearCase, Harvest, CMVC, Visual SourceSafe, AccuRev SCM, Sourceanywhere, Team Foundation Server, Rational Synergy, Rational Team Concert, BitKeeper, Plastic SCM, IIS active directory, 2IS,
-                Datawarehouse, Machine Learning, NLP, DeepLearning, Réseau de Neurones, kNN, k\-NN, Régression Linéaire, SVM, Régression Logistique, Arbre de Décission, Fôrets Aléatoires, gradient boosting, PCA, Analyse en Composantes Principales, DataLake, DataFactory, PowerBI, Tableau, Qlikesense, GCP, OpenCV, Computer Vision, 
-                Gestion, Organization, Management, Agile, Scrum, Trello, JIRA, MS Project, Confluence, Sprint, GANTT, Specifications, Redaction, Cahier de charges, Workshop, Atelier, AMOA, PMO
+                {stacks}
                 """
         return content_prompt
 
@@ -212,7 +208,7 @@ class ContentRetriever(File_Dialoger):
             chunk_context = self.db.segments[segment_index]
             content = self.ask_question(
                 self.content_request(
-                    json_string=json_string, chunk_context=chunk_context
+                    json_string=json_string, chunk_context=chunk_context, stacks=self.stacks
                 )
             )
             try:

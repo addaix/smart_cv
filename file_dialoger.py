@@ -9,7 +9,8 @@ from langchain_community.vectorstores.chroma import Chroma
 from operator import itemgetter
 from langchain_community.document_loaders import DirectoryLoader
 from langchain_community.document_loaders.word_document import Docx2txtLoader
-class File_Dialoger:
+
+class FileDialoger:
     """Class to handle file dialog using RAG and prompts"""
     def __init__(self, document_path=None, api_key=None, retrieve=False, **kwargs):
         self.set_api_key(api_key)
