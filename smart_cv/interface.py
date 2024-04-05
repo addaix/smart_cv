@@ -55,7 +55,7 @@ def process_cv(
             with open(filepath, "wb") as f:
                 f.write(save_bytes)
         elif isinstance(save_to, MutableMapping):
-            # compute save_key by replacing the cv_path filename 
+            # compute save_key by replacing the cv_path filename
             # extension with docx extension
             cv_path_filename = cv_path.split('/')[-1]
             save_key = cv_path_filename.replace('.pdf', '.docx')
