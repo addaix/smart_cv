@@ -22,20 +22,13 @@ class CvsInfoStore(Files):
     def __init__(self, rootdir, *args, **kwargs):
         super().__init__(rootdir, *args, **kwargs)
 
-# class CvsFilesReader(PdfFilesReader):
-#     """Read CV files as text"""
-
-#     def __init__(self, rootdir, *args, **kwargs):
-#         super().__init__(rootdir, *args, **kwargs)
-
 
 mall = Namespace(
     data=Files(app_filepath('data')),
-    cvs= extension_base_wrap(Files(app_filepath('data', 'cvs'))), #CvsFilesReader(app_filepath('data', 'cvs')),
+    cvs= extension_base_wrap(Files(app_filepath('data', 'cvs'))),
     cvs_info=CvsInfoStore(app_filepath('data', 'cvs_info')),
     filled=Files(app_filepath('data', 'filled')),
     configs=TextFiles(app_filepath('configs')),
-    stacks=Files(app_filepath('data', 'stacks')),
     pkg_data_store=Files(data_dir),
 )
 
@@ -64,6 +57,6 @@ get_config = config_getter_factory(
 
 
 # -----------------------------------------------------------
-dflt_stacks = ChainMap([
-    mall.stacks,
-])
+dflt_stacks = mall.data['stacks_keywords.txt'].decode('utf-8')
+
+dflt_json_example = mall.configs['json_example.txt']

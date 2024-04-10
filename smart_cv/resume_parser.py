@@ -62,6 +62,8 @@ class ContentRetriever(FileDialoger):
         cv_text: str,
         prompts: Mapping, 
         stacks: str,
+        json_example: str,
+        language: str = "detection", # detection : detect the language of the text, english, french, ...
         api_key: str = None,
         cv_name: str = "cv",
         optional_content=None,
@@ -71,9 +73,11 @@ class ContentRetriever(FileDialoger):
         self.__empty_label = kwargs.get("empty_label", "To be completed")
         self.optional_content = optional_content
         self.cv_text = cv_text
+        self.language = language
         self.dict_content = {}
         self.prompts = prompts
         self.stacks = stacks
+        self.json_example = json_example
 
         prompt_tokens = num_tokens(
             self.content_request("", "")
@@ -90,63 +94,24 @@ class ContentRetriever(FileDialoger):
 
         debug(f"Chunk size: {chunk_size}")
 
-    def content_request(self, json_string=None, chunk_context=None, stacks=None):
+    def content_request(self, json_string=None, chunk_context=None, stacks=None, json_example=None):
         if stacks is None:
             stacks = self.stacks
+        if json_example is None:
+            json_example = self.json_example
         content_prompt = f"""
                 I will give you a resume and you will fill the provided json. 
-                The keys have to be respected and the corresponding description will be replaced by the retrieved information.
+                The keys have to be respected and the corresponding description will be replaced by the retrieved information. 
                 Answer has to be precise, compleate and contains as much as possible informations of the resume. All information has to come from the given resume.
                 If you don't find the information, write "none". 
 
                 Here is an example to guide you:
-                    example of original json : 
-                        "JobTitle": Give the job title of the candidate,
-                        "avaibility": When is the candidate available to start,
-                        "mobility": Is the candidate ready to move, if yes where,
-                        "seniority": Number of years of experience,
-                        "skills": List the technical skills of the candidate,
-                        "certifications": List the certifications of the candidate related to the job,
-                        "experiences": List the professional experiences of the candidate,
-                        "personal_projects": List the personal projects of the candidate,
-                        "languages": List the languages spoken by the candidate,
-                        "education": List the studies of the candidate and provide level and date if possible
-                        
-                    example of the completed json : 
-                        "JobTitle": "Data Scientist",
-                        "avaibility": "As soon as possible",
-                        "mobility": "none",
-                        "seniority": "2 years",
-                        "skills": "Python, SQL, Machine Learning, NLP",
-                        "certifications": "DataCamp, Coursera",
-                        "experiences": [
-                            {{"title": "Apprentice data analyst",
-                                "company": "Facebook",
-                                "dates": "2020-2023",
-                                "description": "Worked on the user behavior analysis.",
-                                "tasks": "Data cleaning of the dataset, Building the model, Testing the model, etc...",
-                                "tools": "Python, TensorFlow, Pandas, Numpy, etc..."}},
-                            {{   "title": "Data Scientist intern",
-                                "company": "Google",
-                                "dates": "2020 - 3 months",
-                                "description": "Worked on the recommendation system of Youtube.",
-                                "tasks": "Data cleaning of the dataset, Building the model, Testing the model, etc...",
-                                "tools": "Python, TensorFlow, Pandas, Numpy, etc..."}},
-                            - {{"etc..."}}
-                        ],
-                        "personal_projects": "Chatbot, face recognition",
-                        "languages": "English(C1), French, Spanish (B2)", 
-                        "education": [
-                            "diploma": Master in Data Science,
-                            "school": Harvard,
-                            "dates": 2018-2020]
-
-                the "etc..." indicates that you can add more information if needed. If not remove it.
+                    {json_example}
 
                 Here is the json you have to fill:                           
                 Json : {json_string}
                 
-                Give directly the json and preserve the format.
+                Give directly the json and preserve the format (double quotes for keys).
 
                 Here is the resume you have to base on: {chunk_context} 
                                    
@@ -179,6 +144,7 @@ class ContentRetriever(FileDialoger):
                 return self.aggregate_dict_values(dict_list)
         return result
 
+
     def aggregate_dict_values(self, dict_list: List[Mapping]):
         """Aggregate the information of a list of dictionaries."""
         result = {}
@@ -208,7 +174,7 @@ class ContentRetriever(FileDialoger):
             chunk_context = self.db.segments[segment_index]
             content = self.ask_question(
                 self.content_request(
-                    json_string=json_string, chunk_context=chunk_context, stacks=self.stacks
+                    json_string=json_string, chunk_context=chunk_context,  stacks=self.stacks, json_example=self.json_example
                 )
             )
             try:
@@ -218,17 +184,30 @@ class ContentRetriever(FileDialoger):
                     f"This json is not well formatted {content}. Here is the error{e}). Please correct it and return the corrected json."
                 )
                 print("The json is not well formatted. Trying again...")
-                print(content)
                 try:
                     content_json = json.loads(content)
                 except json.JSONDecodeError as e:
                     print("The json is still not well formatted. Please correct it.")
                     return e
+            print("Content retrieved: ", content_json)
             content_list.append(content_json)
         full_content = self.aggregate_dicts(content_list)
         if inplace:
             self.dict_content = full_content
         return full_content
+    
+    def translate_content(self, language=None):
+        """Translate the content in the given language."""
+        if language is None:
+            language = self.language
+        if language == "english":
+            return self.dict_content
+        translated_content = self.ask_question(f"""Translate the values of the following json in : {language}  
+                                               Keep the keys as they are and translate the values. Return the translated json.
+                                               Do not translate 'none'.
+                                               Keep json fromat (double quotes).
+                                               Content: {str(self.dict_content)} """)
+        return json.loads(translated_content)
 
     def has_content_labelling(self):
         for k in self.optional_content:
@@ -277,7 +256,7 @@ class ContentRetriever(FileDialoger):
     def __call__(self):
         self.retrieve_content()
         self.has_content_labelling()
-
+        self.dict_content = self.translate_content()
         # doing it the immutable way:
         dict_content = self.dict_content
         dict_content = self.label_empty_content(dict_content)
