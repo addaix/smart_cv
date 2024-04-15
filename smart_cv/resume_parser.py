@@ -1,5 +1,4 @@
 from docxtpl import DocxTemplate  # pip install docxtpl
-from tqdm import tqdm
 import os
 import json
 from typing import Mapping, Union, List
@@ -9,9 +8,9 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 parent_path = os.path.abspath(os.path.join(dir_path, os.pardir))
 os.sys.path.append(parent_path)
 print(parent_path)
-from file_dialoger import File_Dialoger
+from file_dialoger import FileDialoger
 from VectorDB import ChunkDB
-from smart_cv.util import num_tokens_doc, num_tokens_from_string, load_full_text
+from smart_cv.util import num_tokens
 
 DEBUG = False
 
@@ -50,7 +49,7 @@ def replace_none_in_json(json_data, empty_label="To be completed"):
     return json_data
 
 
-class ContentRetriever(File_Dialoger):
+class ContentRetriever(FileDialoger):
     """Class to parse a resume and fill a template with the information retrieved by LLM API requests.
     Args:
         cv_path (str): Path to the resume to parse.
@@ -60,102 +59,64 @@ class ContentRetriever(File_Dialoger):
 
     def __init__(
         self,
-        cv_path: str,
-        prompts: Mapping,
+        cv_text: str,
+        prompts: Mapping, 
+        stacks: str,
+        json_example: str,
+        language: str = "detection", # detection : detect the language of the text, english, french, ...
         api_key: str = None,
+        cv_name: str = "cv",
         optional_content=None,
         **kwargs,
     ):
         self.api_key = api_key
         self.__empty_label = kwargs.get("empty_label", "To be completed")
-        self._cv_path = cv_path
         self.optional_content = optional_content
-
+        self.cv_text = cv_text
+        self.language = language
         self.dict_content = {}
         self.prompts = prompts
+        self.stacks = stacks
+        self.json_example = json_example
 
-        prompt_tokens = num_tokens_from_string(
+        prompt_tokens = num_tokens(
             self.content_request("", "")
-        ) + num_tokens_from_string(str(self.prompts))
-        cv_tokens = num_tokens_doc(self._cv_path)
+        ) + num_tokens(str(self.prompts))
+        cv_tokens = num_tokens(self.cv_text)
         chunk_overlap = kwargs.get("chunk_overlap", 100)
         max_tokens = 4000  # TODO : Find a way to get the max tokens from the API
 
-        content = load_full_text(self._cv_path)
-        chunk_size = get_chunk_size(len(content), cv_tokens, prompt_tokens, max_tokens)
+        chunk_size = get_chunk_size(len(self.cv_text), cv_tokens, prompt_tokens, max_tokens)
         self.db = ChunkDB(
-            {self._cv_path: content}, chunk_size=chunk_size, chunk_overlap=chunk_overlap
+            {str(kwargs.get('cv_name', 'cv')): self.cv_text}, chunk_size=chunk_size, chunk_overlap=chunk_overlap
         )
         super().__init__(api_key=api_key, retrieve=False)
 
         debug(f"Chunk size: {chunk_size}")
 
-    def content_request(self, json_string=None, chunk_context=None):
+    def content_request(self, json_string=None, chunk_context=None, stacks=None, json_example=None):
+        if stacks is None:
+            stacks = self.stacks
+        if json_example is None:
+            json_example = self.json_example
         content_prompt = f"""
                 I will give you a resume and you will fill the provided json. 
-                The keys have to be respected and the corresponding description will be replaced by the retrieved information.
+                The keys have to be respected and the corresponding description will be replaced by the retrieved information. 
                 Answer has to be precise, compleate and contains as much as possible informations of the resume. All information has to come from the given resume.
                 If you don't find the information, write "none". 
 
                 Here is an example to guide you:
-                    example of original json : 
-                        "JobTitle": Give the job title of the candidate,
-                        "avaibility": When is the candidate available to start,
-                        "mobility": Is the candidate ready to move, if yes where,
-                        "seniority": Number of years of experience,
-                        "skills": List the technical skills of the candidate,
-                        "certifications": List the certifications of the candidate related to the job,
-                        "experiences": List the professional experiences of the candidate,
-                        "personal_projects": List the personal projects of the candidate,
-                        "languages": List the languages spoken by the candidate,
-                        "education": List the studies of the candidate and provide level and date if possible
-                        
-                    example of the completed json : 
-                        "JobTitle": "Data Scientist",
-                        "avaibility": "As soon as possible",
-                        "mobility": "none",
-                        "seniority": "2 years",
-                        "skills": "Python, SQL, Machine Learning, NLP",
-                        "certifications": "DataCamp, Coursera",
-                        "experiences": [
-                            {{"title": "Apprentice data analyst",
-                                "company": "Facebook",
-                                "dates": "2020-2023",
-                                "description": "Worked on the user behavior analysis.",
-                                "tasks": "Data cleaning of the dataset, Building the model, Testing the model, etc...",
-                                "tools": "Python, TensorFlow, Pandas, Numpy, etc..."}},
-                            {{   "title": "Data Scientist intern",
-                                "company": "Google",
-                                "dates": "2020 - 3 months",
-                                "description": "Worked on the recommendation system of Youtube.",
-                                "tasks": "Data cleaning of the dataset, Building the model, Testing the model, etc...",
-                                "tools": "Python, TensorFlow, Pandas, Numpy, etc..."}},
-                            - {{"etc..."}}
-                        ],
-                        "personal_projects": "Chatbot, face recognition",
-                        "languages": "English(C1), French, Spanish (B2)", 
-                        "education": [
-                            "diploma": Master in Data Science,
-                            "school": Harvard,
-                            "dates": 2018-2020]
-
-                the "etc..." indicates that you can add more information if needed. If not remove it.
+                    {json_example}
 
                 Here is the json you have to fill:                           
                 Json : {json_string}
                 
-                Give directly the json and preserve the format.
+                Give directly the json and preserve the format (double quotes for keys).
 
                 Here is the resume you have to base on: {chunk_context} 
-                                    
+                                   
                 Here are keywords of technical stack that should be found in the resume to fill 'skills': 
-                 C,, Perl, Ruby, MatLab, Mathematica, Assembleur, VB, XML, JEE, J2EE, JavaScript, PHP, R,, CSS, C\+\+, IOS, Swift, Android, Kotlin, Flutter, Dart, Rust, Ionic, Cordova, Reactnative, Xamarin, Babylon.js, C\#, F\#, WordPress, ThreeJS, WebGL,
-                TensorFlow, Spark, Spring, Angular, Structs, Ember, Vue, Django, React, .NET,, .NET Core, Cocoapods, Osgi, Selenium, QA, Nest, Express, Symphony, Falcon, ASP.NET, WinDev, Flask, PySpark, Hibernate,
-                Hive, Impala, Oracle, MySQL, Acess, SQL, SQL Server, PostgreSQL, Mongo, MariaDB, DBA,
-                API, Unit Testing, Test Unitaire, Azure, Docker, Bamboo, Kubernetes, Jenkins, Jasmine, Karma, MVC, AWS,
-                Git, Tortoise, TFS, CVS, SVN, MVC, GNU RCS, GNU CSSC, CVSNT, GNU arch, Darcs, DCVS, Monotone, Codeville, Mercurial, Bazaar, Fossil, Veracity, Pijul, SCCS, PVCS, Rational ClearCase, Harvest, CMVC, Visual SourceSafe, AccuRev SCM, Sourceanywhere, Team Foundation Server, Rational Synergy, Rational Team Concert, BitKeeper, Plastic SCM, IIS active directory, 2IS,
-                Datawarehouse, Machine Learning, NLP, DeepLearning, Réseau de Neurones, kNN, k\-NN, Régression Linéaire, SVM, Régression Logistique, Arbre de Décission, Fôrets Aléatoires, gradient boosting, PCA, Analyse en Composantes Principales, DataLake, DataFactory, PowerBI, Tableau, Qlikesense, GCP, OpenCV, Computer Vision, 
-                Gestion, Organization, Management, Agile, Scrum, Trello, JIRA, MS Project, Confluence, Sprint, GANTT, Specifications, Redaction, Cahier de charges, Workshop, Atelier, AMOA, PMO
+                {stacks}
                 """
         return content_prompt
 
@@ -182,6 +143,7 @@ class ContentRetriever(File_Dialoger):
                 print("The json is not well formatted. Trying again...")
                 return self.aggregate_dict_values(dict_list)
         return result
+
 
     def aggregate_dict_values(self, dict_list: List[Mapping]):
         """Aggregate the information of a list of dictionaries."""
@@ -212,7 +174,7 @@ class ContentRetriever(File_Dialoger):
             chunk_context = self.db.segments[segment_index]
             content = self.ask_question(
                 self.content_request(
-                    json_string=json_string, chunk_context=chunk_context
+                    json_string=json_string, chunk_context=chunk_context,  stacks=self.stacks, json_example=self.json_example
                 )
             )
             try:
@@ -222,17 +184,30 @@ class ContentRetriever(File_Dialoger):
                     f"This json is not well formatted {content}. Here is the error{e}). Please correct it and return the corrected json."
                 )
                 print("The json is not well formatted. Trying again...")
-                print(content)
                 try:
                     content_json = json.loads(content)
                 except json.JSONDecodeError as e:
                     print("The json is still not well formatted. Please correct it.")
                     return e
+            print("Content retrieved: ", content_json)
             content_list.append(content_json)
         full_content = self.aggregate_dicts(content_list)
         if inplace:
             self.dict_content = full_content
         return full_content
+    
+    def translate_content(self, language=None):
+        """Translate the content in the given language."""
+        if language is None:
+            language = self.language
+        if language == "english":
+            return self.dict_content
+        translated_content = self.ask_question(f"""Translate the values of the following json in : {language}  
+                                               Keep the keys as they are and translate the values. Return the translated json.
+                                               Do not translate 'none'.
+                                               Keep json fromat (double quotes).
+                                               Content: {str(self.dict_content)} """)
+        return json.loads(translated_content)
 
     def has_content_labelling(self):
         for k in self.optional_content:
@@ -281,7 +256,7 @@ class ContentRetriever(File_Dialoger):
     def __call__(self):
         self.retrieve_content()
         self.has_content_labelling()
-
+        self.dict_content = self.translate_content()
         # doing it the immutable way:
         dict_content = self.dict_content
         dict_content = self.label_empty_content(dict_content)
