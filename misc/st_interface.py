@@ -1,15 +1,14 @@
 # streamlit interface
 import streamlit as st
-from smart_cv import cv_content, fill_template, mall
+from smart_cv import cv_content, fill_template, mall, dag_pipeline
 from smart_cv.util import extension_based_decoding
 from meshed import DAG
 from smart_cv.base import mall
-import os
 
 
 print("Avaible CVs in the app: ",list(mall.cvs))
 funcs = [cv_content, fill_template]
-dag = DAG(funcs)
+dag = dag_pipeline# DAG(funcs)
 
 
 st.title("DT generation app")

@@ -5,12 +5,12 @@ import json
 from typing import Mapping, Union, List
 from functools import partial
 from dataclasses import dataclass
+from meshed import provides
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 parent_path = os.path.abspath(os.path.join(dir_path, os.pardir))
 os.sys.path.append(parent_path)
 print(parent_path)
-#from file_dialoger import FileDialoger
 from VectorDB import ChunkDB
 from smart_cv.util import num_tokens
 
@@ -35,7 +35,7 @@ def get_chunk_size(cv_len, cv_tokens, prompt_tokens, max_tokens):
     return cv_len // nb_chunks
 
 
-def replace_none_in_json(json_data, empty_label="To be completed"):
+def replace_none_in_json(json_data, empty_label):
     if isinstance(json_data, dict):
         for key in json_data:
             if json_data[key] == "none":
@@ -51,6 +51,7 @@ def replace_none_in_json(json_data, empty_label="To be completed"):
     return json_data
 
 @dataclass
+@provides("raw_dict_content")
 class ContentRetriever():
     """Class to parse a resume and fill a template with the information retrieved by LLM API requests.
     Args:
@@ -62,12 +63,11 @@ class ContentRetriever():
     prompts: Mapping
     stacks: str
     json_example: str
-    language_list: List[str]
-    empty_label: str 
-    optional_content: Mapping
-    language: str = "automatic" # automatic : detect the language of the text, english, french, ...
+    #language_list: List[str]
+    #empty_label: str 
+    #optional_content: Mapping
+    #language: str = "automatic" # automatic : detect the language of the text, english, french, ...
     api_key: str = None
-    cv_name: str = "cv"
     chunk_overlap: int = 100
     temperature: float = 0.0
     def __post_init__(
@@ -87,8 +87,6 @@ class ContentRetriever():
         self.db = ChunkDB(
             {str(kwargs.get('cv_name', 'cv')): self.cv_text}, chunk_size=chunk_size, chunk_overlap=self.chunk_overlap
         )
-
-        #super().__init__(api_key=self.api_key, retrieve=False, temperature=self.temperature, chunk_size=chunk_size, **kwargs)
 
         debug(f"Chunk size: {chunk_size}")
 
@@ -191,88 +189,105 @@ class ContentRetriever():
             self.dict_content = full_content
         return full_content
     
-    def detect_language(self):
-        """Detect the language of the text."""
-        lang = self.chat(f"Detect the language of the following text: {self.cv_text} \n Return english, french, spanish or potuguese.")
-        print(f"Language detected: {lang.lower()}")
-        for l in self.language_list:
-            if l.lower() in lang.lower():
-                print(f"Language detected: {l.lower()}")
-                return l.lower()
-        return lang.split(":")[1].lower()
-    
-    def translate_content(self, language=None):
-        """Translate the content in the given language."""
-        if language is None:
-            language = self.language
-        if language == "automatic":
-            language = self.detect_language()
-        if language == "english":
-            return self.dict_content
-        else:
-            translated_content = self.chat(f"""Translate the values of the following json in : {language}  
-                                               Keep the keys as they are and translate the values. Return the translated json.
-                                               Do not translate 'none'.
-                                               Keep json fromat (double quotes).
-                                               Content: {str(self.dict_content)} """)
-        return json.loads(translated_content)
-
-    def has_content_labelling(self):
-        for k in self.optional_content:
-            v = self.dict_content[k]
-            if isinstance(v, str):
-                if "none" in v.lower():
-                    self.dict_content["has_" + k] = False
-                else:
-                    self.dict_content["has_" + k] = True
-
-    def retrieve_one(self, label, prompt=None, inplace=True):
-        """Retrieve the information for the given label and put it in the dict_content if inplace is True. Else return the content."""
-        if prompt is not None:
-            self.prompts[label] = prompt
-        else:
-            assert label in self.prompts, f"Please set a prompt for {label} ."
-        new_content = self.retrieve_content({label: self.prompts[label]}, inplace=False)
-        if inplace:
-            self.dict_content.update(new_content)
-        return new_content
-
-    def save_content(self, save_path):
-        with open(save_path, "w") as f:
-            json.dump(self.dict_content, f)
-
-    def load_content(self, content_path):
-        """Load the information from a json file."""
-        with open(content_path, "r") as f:
-            self.dict_content = json.load(f)
-
-    def label_empty_content(
-        self, dict_content: dict, empty_label: str
-    ):
-        return replace_none_in_json(dict_content, empty_label)
-
-    def print_content(self, content_label=None):
-        if content_label is not None:
-            print(f"----------------- {content_label} -----------------")
-            print(self.dict_content[content_label])
-        else:
-            for content_label, content in self.dict_content.items():
-                print(f"----------------- {content_label} -----------------")
-                print(content)
-
-    # TODO: Can we do this whole pipeline in an immutable chain?
     def __call__(self):
         self.retrieve_content()
-        self.has_content_labelling()
-        self.dict_content = self.translate_content()
-        # doing it the immutable way:
-        dict_content = self.dict_content
-        dict_content = self.label_empty_content(dict_content, self.empty_label)
+        return self.dict_content
+    
+def detect_language(cv_text:str, language_list: List[str], chat):
+    """Detect the language of the text."""
+    lang = chat(f"Detect the language of the following text: {cv_text} \n Return english, french, spanish or potuguese.")
+    print(f"Language detected: {lang.lower()}")
+    for l in language_list:
+        if l.lower() in lang.lower():
+            print(f"Language detected: {l.lower()}")
+            return l.lower()
+    return lang.split(":")[1].lower()
+    
+@provides("translated_dict_content")
+def translate_content(dict_content, cv_text:str, language:str="automatic", *,language_list: List[str], chat):
+    """Translate the content in the given language."""
+
+    if language == "automatic":
+        language = detect_language(cv_text, language_list, chat)
+    if language == "english":
         return dict_content
+    else:
+        translated_content = chat(f"""Translate the values of the following json in : {language}  
+                                            Keep the keys as they are and translate the values. Return the translated json.
+                                            Do not translate 'none'.
+                                            Keep json fromat (double quotes).
+                                            Content: {str(dict_content)} """)
+    return json.loads(translated_content)
+
+@provides("labeled_optional_content")
+def has_content_labelling(dict_content, optional_content: List[str]):
+    """Add a boolean to the dict_content for each optional content. This informs if the content is present in the resume or not."""
+    updated_content = dict_content.copy()
+    for k in optional_content:
+        v = dict_content[k]
+        if isinstance(v, str):
+            if "none" in v.lower():
+                updated_content["has_" + k] = False
+            else:
+                updated_content["has_" + k] = True
+    
+    return updated_content
+
+def bytes_content(dict_content):
+    import json
+    return json.dumps(dict_content).encode('utf-8')
+
+# def retrieve_one(label, prompt=None, inplace=True):
+#     """Retrieve the information for the given label and put it in the dict_content if inplace is True. Else return the content."""
+#     if prompt is not None:
+#         self.prompts[label] = prompt
+#     else:
+#         assert label in self.prompts, f"Please set a prompt for {label} ."
+#     new_content = self.retrieve_content({label: self.prompts[label]}, inplace=False)
+#     if inplace:
+#         self.dict_content.update(new_content)
+#     return new_content
+
+def save_content(dict_content, save_path):
+    """Save the information in a json file."""
+    with open(save_path, "w") as f:
+        json.dump(dict_content, f)
+
+def load_content(content_path):
+    """Load the information from a json file."""
+    with open(content_path, "r") as f:
+        dict_content = json.load(f)
+    return dict_content
+
+@provides("labeled_empty_content")
+def label_empty_content(
+    dict_content: dict, empty_label: str
+):  
+    updated_content = dict_content.copy()
+    return replace_none_in_json(updated_content, empty_label)
+
+def print_content(dict_content, content_label=None):
+    if content_label is not None:
+        print(f"----------------- {content_label} -----------------")
+        print(dict_content[content_label])
+    else:
+        for content_label, content in dict_content.items():
+            print(f"----------------- {content_label} -----------------")
+            print(content)
+
+    # # TODO: Can we do this whole pipeline in an immutable chain?
+    # def __call__(self):
+    #     self.retrieve_content()
+    #     self.has_content_labelling()
+    #     self.dict_content = self.translate_content()
+    #     # doing it the immutable way:
+    #     dict_content = self.dict_content
+    #     dict_content = self.label_empty_content(dict_content, self.empty_label)
+    #     return dict_content
+    
 
 
 from typing import Mapping
-
 
 @dataclass
 class TemplateFiller:
