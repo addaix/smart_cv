@@ -3,6 +3,7 @@
 from importlib.resources import files
 import json
 from functools import partial
+import pdfplumber
 import tiktoken
 from i2 import Namespace
 from config2py import (
@@ -64,13 +65,17 @@ def read_pdf_text(pdf_reader):
     return text_pages
 
 
+
+def read_pdf(file, *, page_sep = "\n--------------\n") -> str:
+    with pdfplumber.open(file) as pdf:
+        return page_sep.join(read_pdf_text(pdf))
+    
+    
 # Map file extensions to decoding functions
 extension_to_decoder = {
     '.txt': lambda obj: obj.decode('utf-8'),
     '.json': json.loads,
-    '.pdf': Pipe(
-        BytesIO, PdfReader, read_pdf_text, '\n\n------------\n\n'.join
-    ),
+    '.pdf': Pipe(BytesIO, read_pdf),
     '.docx': Pipe(bytes_to_doc, get_text_from_docx),
 }
 
@@ -78,7 +83,7 @@ def extension_based_decoding(k, v):
     ext = '.' + k.split('.')[-1]
     decoder = extension_to_decoder.get(ext, None)
     if decoder is None:
-        raise ValueError(f"Unknown extension: {ext}")
+        decoder = extension_to_decoder['.txt']
     return decoder(v)
 
 def extension_base_wrap(store):

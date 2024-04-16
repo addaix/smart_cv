@@ -5,8 +5,7 @@ from smart_cv.util import extension_base_wrap
 import json
 import pathlib
 from i2 import Namespace
-from pdfdol import PdfFilesReader
-from dol import Files, TextFiles
+from dol import Files
 from config2py import (
     user_gettable,
     get_config as config_getter_factory,
@@ -24,11 +23,11 @@ class CvsInfoStore(Files):
 
 
 mall = Namespace(
-    data=Files(app_filepath('data')),
+    data=extension_base_wrap(Files(app_filepath('data'))),
     cvs= extension_base_wrap(Files(app_filepath('data', 'cvs'))),
     cvs_info=CvsInfoStore(app_filepath('data', 'cvs_info')),
-    filled=Files(app_filepath('data', 'filled')),
-    configs=TextFiles(app_filepath('configs')),
+    filled=extension_base_wrap(Files(app_filepath('data', 'filled'))),
+    configs=extension_base_wrap(Files(app_filepath('configs'))),
     pkg_data_store=Files(data_dir),
 )
 
@@ -57,6 +56,6 @@ get_config = config_getter_factory(
 
 
 # -----------------------------------------------------------
-dflt_stacks = mall.data['stacks_keywords.txt'].decode('utf-8')
+dflt_stacks = mall.data['stacks_keywords.txt']
 
 dflt_json_example = mall.configs['json_example.txt']

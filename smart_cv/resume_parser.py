@@ -1,14 +1,16 @@
 from docxtpl import DocxTemplate  # pip install docxtpl
 import os
+from oa import prompt_function, chat
 import json
 from typing import Mapping, Union, List
+from functools import partial
 from dataclasses import dataclass
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 parent_path = os.path.abspath(os.path.join(dir_path, os.pardir))
 os.sys.path.append(parent_path)
 print(parent_path)
-from file_dialoger import FileDialoger
+#from file_dialoger import FileDialoger
 from VectorDB import ChunkDB
 from smart_cv.util import num_tokens
 
@@ -48,49 +50,45 @@ def replace_none_in_json(json_data, empty_label="To be completed"):
                 replace_none_in_json(json_data[i], empty_label)
     return json_data
 
-
-class ContentRetriever(FileDialoger):
+@dataclass
+class ContentRetriever():
     """Class to parse a resume and fill a template with the information retrieved by LLM API requests.
     Args:
         cv_path (str): Path to the resume to parse.
         template_path (str): Path to the template to fill.
         prompts (dict or str): A dict of prompts for each information to retrieve or a path to a json file containing the prompts.
         api_key (str): OpenAI API key."""
-
-    def __init__(
+    cv_text: str
+    prompts: Mapping
+    stacks: str
+    json_example: str
+    language_list: List[str]
+    empty_label: str 
+    optional_content: Mapping
+    language: str = "automatic" # automatic : detect the language of the text, english, french, ...
+    api_key: str = None
+    cv_name: str = "cv"
+    chunk_overlap: int = 100
+    temperature: float = 0.0
+    def __post_init__(
         self,
-        cv_text: str,
-        prompts: Mapping, 
-        stacks: str,
-        json_example: str,
-        language: str = "detection", # detection : detect the language of the text, english, french, ...
-        api_key: str = None,
-        cv_name: str = "cv",
-        optional_content=None,
+        
         **kwargs,
     ):
-        self.api_key = api_key
-        self.__empty_label = kwargs.get("empty_label", "To be completed")
-        self.optional_content = optional_content
-        self.cv_text = cv_text
-        self.language = language
         self.dict_content = {}
-        self.prompts = prompts
-        self.stacks = stacks
-        self.json_example = json_example
-
+        self.chat = partial(chat, temperature=self.temperature)
         prompt_tokens = num_tokens(
             self.content_request("", "")
         ) + num_tokens(str(self.prompts))
         cv_tokens = num_tokens(self.cv_text)
-        chunk_overlap = kwargs.get("chunk_overlap", 100)
         max_tokens = 4000  # TODO : Find a way to get the max tokens from the API
 
         chunk_size = get_chunk_size(len(self.cv_text), cv_tokens, prompt_tokens, max_tokens)
         self.db = ChunkDB(
-            {str(kwargs.get('cv_name', 'cv')): self.cv_text}, chunk_size=chunk_size, chunk_overlap=chunk_overlap
+            {str(kwargs.get('cv_name', 'cv')): self.cv_text}, chunk_size=chunk_size, chunk_overlap=self.chunk_overlap
         )
-        super().__init__(api_key=api_key, retrieve=False)
+
+        #super().__init__(api_key=self.api_key, retrieve=False, temperature=self.temperature, chunk_size=chunk_size, **kwargs)
 
         debug(f"Chunk size: {chunk_size}")
 
@@ -172,15 +170,13 @@ class ContentRetriever(FileDialoger):
 
         for segment_index in self.db.segments:
             chunk_context = self.db.segments[segment_index]
-            content = self.ask_question(
-                self.content_request(
+            content = self.chat(self.content_request(
                     json_string=json_string, chunk_context=chunk_context,  stacks=self.stacks, json_example=self.json_example
-                )
-            )
+                 ))
             try:
                 content_json = json.loads(content)
             except json.JSONDecodeError as e:
-                content = self.ask_question(
+                content = self.chat(
                     f"This json is not well formatted {content}. Here is the error{e}). Please correct it and return the corrected json."
                 )
                 print("The json is not well formatted. Trying again...")
@@ -189,20 +185,32 @@ class ContentRetriever(FileDialoger):
                 except json.JSONDecodeError as e:
                     print("The json is still not well formatted. Please correct it.")
                     return e
-            print("Content retrieved: ", content_json)
             content_list.append(content_json)
         full_content = self.aggregate_dicts(content_list)
         if inplace:
             self.dict_content = full_content
         return full_content
     
+    def detect_language(self):
+        """Detect the language of the text."""
+        lang = self.chat(f"Detect the language of the following text: {self.cv_text} \n Return english, french, spanish or potuguese.")
+        print(f"Language detected: {lang.lower()}")
+        for l in self.language_list:
+            if l.lower() in lang.lower():
+                print(f"Language detected: {l.lower()}")
+                return l.lower()
+        return lang.split(":")[1].lower()
+    
     def translate_content(self, language=None):
         """Translate the content in the given language."""
         if language is None:
             language = self.language
+        if language == "automatic":
+            language = self.detect_language()
         if language == "english":
             return self.dict_content
-        translated_content = self.ask_question(f"""Translate the values of the following json in : {language}  
+        else:
+            translated_content = self.chat(f"""Translate the values of the following json in : {language}  
                                                Keep the keys as they are and translate the values. Return the translated json.
                                                Do not translate 'none'.
                                                Keep json fromat (double quotes).
@@ -239,7 +247,7 @@ class ContentRetriever(FileDialoger):
             self.dict_content = json.load(f)
 
     def label_empty_content(
-        self, dict_content: dict, empty_label: str = "To be completed"
+        self, dict_content: dict, empty_label: str
     ):
         return replace_none_in_json(dict_content, empty_label)
 
@@ -259,7 +267,7 @@ class ContentRetriever(FileDialoger):
         self.dict_content = self.translate_content()
         # doing it the immutable way:
         dict_content = self.dict_content
-        dict_content = self.label_empty_content(dict_content)
+        dict_content = self.label_empty_content(dict_content, self.empty_label)
         return dict_content
 
 

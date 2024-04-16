@@ -21,16 +21,16 @@ def _mk_parser(
         api_key=get_config('api_key'),
         prompts=config["prompts"],
         stacks=dflt_stacks,
+        language_list=config["language_list"],
         language=language,
         json_example=dflt_json_example,
         chunk_overlap=chunk_overlap,
         temperature=temperature,
         optional_content=config.get("optional_content", {}),
-        empty_label=empty_label,
-    )
+        empty_label=config.get("empty_label", "To be filled"))
 
 
-def _cv_content(
+def cv_content(
     cv_text: str,
     language: str = "french",
     *,
@@ -44,9 +44,9 @@ def _cv_content(
         language=language,
         chunk_overlap=chunk_overlap,
         temperature=temperature,
-        empty_label=empty_label,
-    )
+        empty_label=empty_label)
     content = parser()
+
     return content
 
 
@@ -54,11 +54,6 @@ def cv_text(cv_name):
     assert cv_name in mall.cvs, f"CV name {cv_name} not found in the mall."
     cv_text = cv_text = mall.cvs[cv_name]
     return cv_text
-
-
-cv_content = partial(_cv_content, chunk_overlap=50, temperature=0, empty_label="To be filled")
-cv_content.__name__ = "cv_content"
-
 
 
 def fill_template(cv_content:dict, cv_name, template_path=dt_template_dir, save_to=filled_dir):
