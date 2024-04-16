@@ -316,3 +316,9 @@ class TemplateFiller:
 
     def __call__(self, save_path):
         self.save_template(save_path)
+
+def template_bytes(template_path: str, content: Mapping):
+    """Return the bytes of the filled template."""
+    filler = TemplateFiller(template_path, content)
+    filler.fill_template()
+    return filler.template.get_docx()

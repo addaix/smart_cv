@@ -8,7 +8,7 @@ from smart_cv.base import mall
 
 print("Avaible CVs in the app: ",list(mall.cvs))
 funcs = [cv_content, fill_template]
-dag = dag_pipeline# DAG(funcs)
+dag = dag_pipeline["_mk_parser":"fill_template"]# DAG(funcs)
 
 
 st.title("DT generation app")
@@ -42,6 +42,6 @@ if uploaded_file is not None:
         save_name = name_of_cv + "_filled.docx"
         st.write(f"Download the filled CV: {save_name}")
         st.download_button(label="Download", 
-                           data=mall.filled[name_of_cv + "_filled.docx"],
+                           data=open(filepath, 'rb').read(),
                            file_name=save_name, 
                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
