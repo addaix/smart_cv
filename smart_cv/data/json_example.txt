@@ -1,0 +1,34 @@
+
+                        
+                    example of the completed json : 
+{
+                        "JobTitle": "Data Scientist",
+                        "avaibility": "As soon as possible",
+                        "mobility": "none",
+                        "seniority": "2 years",
+                        "skills": "Python, SQL, Machine Learning, NLP",
+                        "certifications": "DataCamp, Coursera",
+                        "experiences": [
+                            {"title": "Apprentice data analyst",
+                                "company": "Facebook",
+                                "dates": "2020-2023",
+                                "description": "Worked on the user behavior analysis.",
+                                "tasks": ["Data cleaning of the dataset", "Building the model", "Testing the model"]
+                                "tools": "Python, TensorFlow, Pandas, Numpy, etc..."},
+                            {   "title": "Data Scientist intern",
+                                "company": "Google",
+                                "dates": "2020 - 3 months",
+                                "description": "Worked on the recommendation system of Youtube.",
+                                "tasks": ["Data cleaning of the dataset", "Building the model", "Testing the model"]
+                                "tools": "Python, TensorFlow, Pandas, Numpy, etc..."},
+                            - {"etc..."}
+                        ],
+                        "personal_projects": "Chatbot, face recognition",
+                        "languages": "English(C1), French, Spanish (B2)", 
+                        "education": [
+                            "diploma": Master in Data Science,
+                            "school": Harvard,
+                            "dates": 2018-2020]
+}
+
+                the "etc..." indicates that you can add more information if needed. If not remove it.
