@@ -1,5 +1,4 @@
 # smart_cv
-Tools to retrieve, check information and generate a docx from a template
+Tool to retreave information from a document (pdf or word) in an json schema. These informations can be injected in a template using corresponding keys.
 
-- ResumeParser 
-- Information
+Hence, one can take a raw CV as input and generate a custom CV with custom content and styles. 

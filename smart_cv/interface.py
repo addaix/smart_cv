@@ -1,4 +1,4 @@
-"""Interface objects"""
+"""Interface objects: provide a dag pipeline and functions to interface the processing"""
 
 from smart_cv.base import dflt_config, get_config, dflt_stacks, dflt_json_example, mall
 from smart_cv.resume_parser import ContentRetriever, TemplateFiller, label_empty_content, has_content_labelling, translate_content

@@ -1,3 +1,5 @@
+"Streamlit interface for the CV processing"
+
 # streamlit interface
 import streamlit as st
 from smart_cv import cv_content, fill_template, mall, dag_pipeline

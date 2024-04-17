@@ -1,3 +1,5 @@
+"""Module to parse a resume and fill a template with the information retrieved by LLM API requests."""
+
 from docxtpl import DocxTemplate  # pip install docxtpl
 import os
 from oa import prompt_function, chat

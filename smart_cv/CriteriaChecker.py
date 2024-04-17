@@ -1,3 +1,5 @@
+"""This module is used to check informations in a cv and give feedbacks regarding specified rules."""
+
 import sys
 from functools import cached_property
 sys.path.append('..')
