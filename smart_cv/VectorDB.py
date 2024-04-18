@@ -1,3 +1,5 @@
+"""VectorDB"""
+
 # VectorDB class
 from typing import Mapping, Iterable, Dict, Any
 from dataclasses import dataclass, field
