@@ -12,7 +12,6 @@ DocValue = str
 
 from typing import Tuple, List, Mapping
 
-DocKey = str
 SegmentKey = Tuple[DocKey, int, int]
 
 def generate_split_keys(docs: dict, text_splitter: RecursiveCharacterTextSplitter, metadatas: List[dict]) -> List[Tuple[str, int, int]]:
