@@ -8,12 +8,7 @@ from typing import Mapping, Union, List
 from functools import partial
 from dataclasses import dataclass
 from meshed import provides
-
-dir_path = os.path.dirname(os.path.realpath(__file__))
-parent_path = os.path.abspath(os.path.join(dir_path, os.pardir))
-os.sys.path.append(parent_path)
-print(parent_path)
-from VectorDB import ChunkDB
+from smart_cv.VectorDB import ChunkDB
 from smart_cv.util import num_tokens
 
 DEBUG = False
@@ -198,10 +193,8 @@ class ContentRetriever():
 def detect_language(cv_text:str, language_list: List[str], chat):
     """Detect the language of the text."""
     lang = chat(f"Detect the language of the following text: {cv_text} \n Return english, french, spanish or potuguese.")
-    print(f"Language detected: {lang.lower()}")
     for l in language_list:
         if l.lower() in lang.lower():
-            print(f"Language detected: {l.lower()}")
             return l.lower()
     return lang.split(":")[1].lower()
     

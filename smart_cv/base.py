@@ -58,20 +58,23 @@ copy_if_missing('json_example.txt', mall.configs)
 from collections import ChainMap
 from smart_cv.util import data_dir
 
-pkg_defaults = {
-    'template_path': str(data_dir + '/DT_Template.docx'),
-}
+# pkg_defaults = {
+#     'template_path': str(data_dir + '/DT_Template.docx'),
+# }
 
 config_sources = [
     mall.configs,  # user local configs
-    json.loads(mall.configs['config.json']),  # package config.json
+    # json.loads(mall.configs['config.json']),  # package config.json
     # json.loads(pathlib.Path(app_config_path).read_text()),  # package config.json
-    pkg_defaults,  # package defaults
+    #pkg_defaults,  # package defaults
 ]
 
-dflt_config = ChainMap(*config_sources)  # a config mapping
+dflt_config = mall.configs['config.json'] #ChainMap(*config_sources)  # a config mapping
+dflt_stacks = mall.data['stacks_keywords.txt'].splitlines()
+dflt_json_example = mall.configs['json_example.txt']
 
 # a config getter, enhanced by the user_gettable store
 get_config = config_getter_factory(
-    sources=config_sources + [user_gettable(mall.configs)],
+    sources=config_sources + 
+    [user_gettable(mall.configs)]
 )
