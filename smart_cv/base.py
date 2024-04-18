@@ -1,7 +1,7 @@
 """Base objects for the smart_cv package."""
 
 from dol import Files, add_ipython_key_completions, wrap_kvs
-from smart_cv.util import extension_base_wrap
+from smart_cv.util import extension_base_wrap, pkg_defaults, extension_base_encoding
 import json
 import pathlib
 from i2 import Namespace
@@ -36,13 +36,24 @@ mall = Namespace(
 from smart_cv.util import pkg_data_files
 
 
-def copy_if_missing(key, dest_store, src_files_obj=pkg_data_files):
-    if key not in dest_store:
-        dest_store[key] = (src_files_obj / key).read_bytes()
+# def copy_if_missing(key, dest_store, src_files_obj=pkg_data_files):
+#     if key not in dest_store:
+#         dest_store[key] = (src_files_obj / key).read_bytes()
 
-copy_if_missing('config.json', mall.configs)
-copy_if_missing('stacks_keywords.txt', mall.data)
-copy_if_missing('json_example.txt', mall.configs)
+
+default_store = Files(str(pkg_defaults))
+
+def populate_local_user_folders(defaults, local_user_folders):
+    for k in defaults:
+        if k not in local_user_folders:
+            local_user_folders[k] = defaults[k]
+    return defaults
+
+populate_local_user_folders(default_store, mall.configs)
+
+# copy_if_missing('config.json', mall.configs)
+# copy_if_missing('stacks_keywords.txt', mall.config)
+# copy_if_missing('json_example.txt', mall.configs)
 
 # if 'config.json' not in mall.configs:
 #     mall.configs['config.json'] = pkg_data_files / 'config.json'
@@ -70,7 +81,7 @@ config_sources = [
 ]
 
 dflt_config = mall.configs['config.json'] #ChainMap(*config_sources)  # a config mapping
-dflt_stacks = mall.data['stacks_keywords.txt'].splitlines()
+dflt_stacks = mall.configs['stacks_keywords.txt'].splitlines()
 dflt_json_example = mall.configs['json_example.txt']
 
 # a config getter, enhanced by the user_gettable store

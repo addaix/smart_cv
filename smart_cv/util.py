@@ -25,6 +25,7 @@ pkg_name = "smart_cv"
 pkg_files = files(pkg_name)
 pkg_data_files = pkg_files / "data"
 pkg_data_path = str(pkg_data_files)
+pkg_defaults = pkg_data_files / "defaults"
 # pkg_files_path = str(pkg_files)
 # pkg_config_path = str(pkg_data_files / "config.json")
 
@@ -90,6 +91,12 @@ extension_to_decoder = {
     '.docx': Pipe(bytes_to_doc, get_text_from_docx),
 }
 
+extension_to_encoder = {
+    '.txt': lambda obj: obj.encode('utf-8'),
+    '.json': json.dumps,
+    '.pdf': lambda obj: obj,
+    '.docx': lambda obj: obj,
+}
 
 def extension_based_decoding(k, v):
     ext = '.' + k.split('.')[-1]
@@ -98,9 +105,18 @@ def extension_based_decoding(k, v):
         decoder = extension_to_decoder['.txt']
     return decoder(v)
 
+def extension_base_encoding(k, v):
+    ext = '.' + k.split('.')[-1]
+    encoder = extension_to_encoder.get(ext, None)
+    if encoder is None:
+        encoder = extension_to_encoder['.txt']
+    return encoder(v)
+
 
 def extension_base_wrap(store):
-    return wrap_kvs(store, postget=extension_based_decoding)
+    return wrap_kvs(store, postget=extension_based_decoding) #, preset=extension_base_encoding)
+
+
 
 
 # --------------------------  Missed content analysis  --------------------------------
