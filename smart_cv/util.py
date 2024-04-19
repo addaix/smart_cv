@@ -4,6 +4,9 @@ from importlib.resources import files
 import json
 from functools import partial
 import pdfplumber
+from docx2python import docx2python
+from docx2python.iterators import iter_paragraphs
+from docx import Document
 import tiktoken
 from i2 import Namespace
 from config2py import (
@@ -34,7 +37,7 @@ pkg_defaults = pkg_data_files / "defaults"
 app_dir = get_app_data_folder(pkg_name, ensure_exists=True)
 app_filepath = partial(process_path, ensure_dir_exists=False, rootdir=app_dir)
 data_dir = app_filepath('data')
-dt_template_dir = app_filepath('data/DT_Template.docx')
+dt_template_dir = app_filepath('configs/DT_Template.docx')
 app_config_path = app_filepath('configs/config.json')
 filled_dir = app_filepath('data/filled')
 
@@ -82,13 +85,19 @@ def read_pdf(file, *, page_sep="\n--------------\n") -> str:
     with pdfplumber.open(file) as pdf:
         return page_sep.join(read_pdf_text(pdf))
 
+def full_docx_decoder(doc_bytes):
+    text = get_text_from_docx(Document(doc_bytes))
+    doc = docx2python(doc_bytes)
+    added_header = '\n\n'.join(iter_paragraphs(doc.header)) + text
+    added_footer = added_header + '\n\n'.join(iter_paragraphs(doc.footer))
+    return added_footer
 
 # Map file extensions to decoding functions
 extension_to_decoder = {
     '.txt': lambda obj: obj.decode('utf-8'),
     '.json': json.loads,
     '.pdf': Pipe(BytesIO, read_pdf),
-    '.docx': Pipe(bytes_to_doc, get_text_from_docx),
+    '.docx': Pipe(BytesIO,full_docx_decoder)
 }
 
 extension_to_encoder = {

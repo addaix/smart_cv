@@ -21,8 +21,9 @@ uploaded_file = st.file_uploader("Choose a file", accept_multiple_files=False, t
 # parameters for the CVs processing
 # help information
 st.sidebar.write("Set the parameters for the DT processing")
-api_key = st.sidebar.text_input("API key")
-dag = dag_pipeline["_mk_parser":"fill_template"](api_key=api_key)
+api_key = st.sidebar.text_input("OpenAI API key", "", type="password")
+language = st.sidebar.selectbox("Choose the language: 'automatique' write the DT in the same language than the CV", ["automatique","french", "english"])
+dag = dag_pipeline["_mk_parser":"fill_template"]
 temperature = st.sidebar.slider("Temperature", 0.0, 1.0, 0.0)
 chunk_overlap = st.sidebar.slider("Chunk overlap", 0, 300, 50)
 
@@ -31,14 +32,15 @@ if uploaded_file is not None:
     filename = uploaded_file.name
     name_of_cv = filename.split(".")[0]
     text = extension_based_decoding(filename, bytes_data)
-
-    # drop down list for the language
-    language = st.selectbox("Choose the language: 'automatique' write the DT in the same language than the CV", ["automatique","french", "english"])
+    
     print(temperature, chunk_overlap)
     # process the CVs
     if st.button("Process CVs"):
+        if not api_key:
+            st.info("Please add your OpenAI API key to continue.")
+            st.stop()
         st.write("Processing...")
-        filepath = dag(text, language=language, cv_name=name_of_cv, temperature=temperature, chunk_overlap=chunk_overlap)
+        filepath = dag(text, language=language, cv_name=name_of_cv, temperature=temperature, chunk_overlap=chunk_overlap, api_key=api_key)
         print("The filled CV is saved at: ", filepath)
         # dowload a file with given filepath
         
