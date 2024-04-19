@@ -13,12 +13,13 @@ def _mk_parser(
     *,
     chunk_overlap: int = config.get("chunk_overlap", 50),
     temperature: float = config.get("temperature", 0),
+    api_key: str = get_config('api_key'),
     #empty_label: str = config.get("empty_label", "To be filled")
 ):
     """Create a parser object for the given CV."""
     return ContentRetriever(
         cv_text=cv_text,
-        api_key=get_config('api_key'),
+        api_key=api_key,
         prompts=config["prompts"],
         stacks=dflt_stacks,
         #language_list=config["language_list"],
