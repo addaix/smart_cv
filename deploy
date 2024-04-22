@@ -1,0 +1,4 @@
+docker build -t smart-cv .;
+docker container stop smart_cv > /dev/null;
+docker container rm smart_cv > /dev/null;
+docker run -p 8501:8501 --name smart_cv smart-cv;
