@@ -11,9 +11,6 @@ RUN pip install git+https://github.com/meshed
 
 RUN pip install streamlit
 
-RUN mkdir -p /root/.config/smart_cv/configs/
-RUN touch /root/.config/smart_cv/configs/config.json
-
 # Exposez le port pour Streamlit
 EXPOSE 8501
 
