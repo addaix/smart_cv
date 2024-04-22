@@ -13,7 +13,7 @@ def _mk_parser(
     *,
     chunk_overlap: int = config.get("chunk_overlap", 50),
     temperature: float = config.get("temperature", 0),
-    api_key: str = get_config('api_key'),
+    api_key: str = get_config('OPENAI_API_KEY'),
     #empty_label: str = config.get("empty_label", "To be filled")
 ):
     """Create a parser object for the given CV."""

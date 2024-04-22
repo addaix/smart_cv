@@ -35,10 +35,11 @@ pkg_defaults = pkg_data_files / "defaults"
 
 # The "app folder" way
 app_dir = get_app_data_folder(pkg_name, ensure_exists=True)
-app_filepath = partial(process_path, ensure_dir_exists=False, rootdir=app_dir)
+app_filepath = partial(process_path, ensure_dir_exists=True, rootdir=app_dir)
 data_dir = app_filepath('data')
-dt_template_dir = app_filepath('configs/DT_Template.docx')
-app_config_path = app_filepath('configs/config.json')
+configs_dir = app_filepath('configs')
+dt_template_dir = configs_dir + '/DT_Template.docx'
+app_config_path = configs_dir + '/config.json'
 filled_dir = app_filepath('data/filled')
 
 
@@ -126,7 +127,19 @@ def extension_base_wrap(store):
     return wrap_kvs(store, postget=extension_based_decoding) #, preset=extension_base_encoding)
 
 
+from typing import List
 
+def get_config(key, sources) -> str:
+    """if not key in source ask user and put it in the source"""
+    for source in sources:
+        if key in source:
+            return source[key]
+        else:
+            continue
+
+    value = input(f"Please enter the value for {key} and press enter")
+    source[key] = extension_base_encoding(key, value)
+    return value
 
 # --------------------------  Missed content analysis  --------------------------------
 

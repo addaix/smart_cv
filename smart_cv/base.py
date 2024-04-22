@@ -1,15 +1,16 @@
 """Base objects for the smart_cv package."""
 
 from dol import Files, add_ipython_key_completions, wrap_kvs
-from smart_cv.util import extension_base_wrap, pkg_defaults, extension_base_encoding
+from smart_cv.util import extension_base_wrap, pkg_defaults, extension_base_encoding, get_config as config_getter_factory
 import json
 import pathlib
 from i2 import Namespace
+from functools import partial
 from dol import Files
-from config2py import (
-    user_gettable,
-    get_config as config_getter_factory,
-)
+# from config2py import (
+#     user_gettable,
+#     get_config as config_getter_factory,
+# )
 from smart_cv.util import app_filepath, app_config_path, data_dir
 
 
@@ -74,7 +75,7 @@ from smart_cv.util import data_dir
 # }
 
 config_sources = [
-    mall.configs,  # user local configs
+    mall.configs.rootdir,  # user local configs
     # json.loads(mall.configs['config.json']),  # package config.json
     # json.loads(pathlib.Path(app_config_path).read_text()),  # package config.json
     #pkg_defaults,  # package defaults
@@ -84,8 +85,7 @@ dflt_config = mall.configs['config.json'] #ChainMap(*config_sources)  # a config
 dflt_stacks = mall.configs['stacks_keywords.txt'].splitlines()
 dflt_json_example = mall.configs['json_example.txt']
 
-# a config getter, enhanced by the user_gettable store
-get_config = config_getter_factory(
-    sources=config_sources + 
-    [user_gettable(mall.configs)]
-)
+
+
+#a config getter, enhanced by the user_gettable store
+get_config = partial(config_getter_factory, sources=[mall.configs])
