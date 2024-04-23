@@ -120,7 +120,7 @@ class ContentRetriever():
         result = dict_list[0]
         for d in dict_list[1:]:
             try:
-                result_str = self.ask_question(
+                result_str = self.chat(
                     f"""Aggregate the 2 following dicts 
                                        values without repetitions and return the dict with 
                                        same keys and aggregated values: 
@@ -144,7 +144,7 @@ class ContentRetriever():
         for d in dict_list:
             for k, v in d.items():
                 if k in result:
-                    result[k] = self.ask_question(
+                    result[k] = self.chat(
                         f"Aggregate content the 2 following contents without repetitions: {str(result[k])} and {str(v)}"
                     )
                 else:
