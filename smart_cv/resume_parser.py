@@ -9,7 +9,7 @@ from functools import partial
 from dataclasses import dataclass
 from meshed import provides
 from smart_cv.VectorDB import ChunkDB
-from smart_cv.util import num_tokens
+from raglab.retrieval.lib_alexis import num_tokens
 
 DEBUG = False
 
@@ -47,47 +47,55 @@ def replace_none_in_json(json_data, empty_label):
                 replace_none_in_json(json_data[i], empty_label)
     return json_data
 
+
 @dataclass
 @provides("raw_dict_content")
-class ContentRetriever():
+class ContentRetriever:
     """Class to parse a resume and fill a template with the information retrieved by LLM API requests.
     Args:
         cv_path (str): Path to the resume to parse.
         template_path (str): Path to the template to fill.
         prompts (dict or str): A dict of prompts for each information to retrieve or a path to a json file containing the prompts.
         api_key (str): OpenAI API key."""
+
     cv_text: str
     prompts: Mapping
     stacks: str
     json_example: str
-    #language_list: List[str]
-    #empty_label: str 
-    #optional_content: Mapping
-    #language: str = "automatic" # automatic : detect the language of the text, english, french, ...
+    # language_list: List[str]
+    # empty_label: str
+    # optional_content: Mapping
+    # language: str = "automatic" # automatic : detect the language of the text, english, french, ...
     api_key: str = None
     chunk_overlap: int = 100
     temperature: float = 0.0
+
     def __post_init__(
         self,
-        
         **kwargs,
     ):
         self.dict_content = {}
         self.chat = partial(chat, temperature=self.temperature)
-        prompt_tokens = num_tokens(
-            self.content_request("", "")
-        ) + num_tokens(str(self.prompts))
+        prompt_tokens = num_tokens(self.content_request("", "")) + num_tokens(
+            str(self.prompts)
+        )
         cv_tokens = num_tokens(self.cv_text)
         max_tokens = 4000  # TODO : Find a way to get the max tokens from the API
 
-        chunk_size = get_chunk_size(len(self.cv_text), cv_tokens, prompt_tokens, max_tokens)
+        chunk_size = get_chunk_size(
+            len(self.cv_text), cv_tokens, prompt_tokens, max_tokens
+        )
         self.db = ChunkDB(
-            {str(kwargs.get('cv_name', 'cv')): self.cv_text}, chunk_size=chunk_size, chunk_overlap=self.chunk_overlap
+            {str(kwargs.get("cv_name", "cv")): self.cv_text},
+            chunk_size=chunk_size,
+            chunk_overlap=self.chunk_overlap,
         )
 
         debug(f"Chunk size: {chunk_size}")
 
-    def content_request(self, json_string=None, chunk_context=None, stacks=None, json_example=None):
+    def content_request(
+        self, json_string=None, chunk_context=None, stacks=None, json_example=None
+    ):
         if stacks is None:
             stacks = self.stacks
         if json_example is None:
@@ -137,7 +145,6 @@ class ContentRetriever():
                 return self.aggregate_dict_values(dict_list)
         return result
 
-
     def aggregate_dict_values(self, dict_list: List[Mapping]):
         """Aggregate the information of a list of dictionaries."""
         result = {}
@@ -165,9 +172,14 @@ class ContentRetriever():
 
         for segment_index in self.db.segments:
             chunk_context = self.db.segments[segment_index]
-            content = self.chat(self.content_request(
-                    json_string=json_string, chunk_context=chunk_context,  stacks=self.stacks, json_example=self.json_example
-                 ))
+            content = self.chat(
+                self.content_request(
+                    json_string=json_string,
+                    chunk_context=chunk_context,
+                    stacks=self.stacks,
+                    json_example=self.json_example,
+                )
+            )
             try:
                 content_json = json.loads(content)
             except json.JSONDecodeError as e:
@@ -185,21 +197,32 @@ class ContentRetriever():
         if inplace:
             self.dict_content = full_content
         return full_content
-    
+
     def __call__(self):
         self.retrieve_content()
         return self.dict_content
-    
-def detect_language(cv_text:str, language_list: List[str], chat):
+
+
+def detect_language(cv_text: str, language_list: List[str], chat):
     """Detect the language of the text."""
-    lang = chat(f"Detect the language of the following text: {cv_text} \n Return english, french, spanish or potuguese.")
+    lang = chat(
+        f"Detect the language of the following text: {cv_text} \n Return english, french, spanish or potuguese."
+    )
     for l in language_list:
         if l.lower() in lang.lower():
             return l.lower()
     return lang.split(":")[1].lower()
-    
+
+
 @provides("translated_dict_content")
-def translate_content(dict_content, cv_text:str, language:str="automatic", *,language_list: List[str], chat):
+def translate_content(
+    dict_content,
+    cv_text: str,
+    language: str = "automatic",
+    *,
+    language_list: List[str],
+    chat,
+):
     """Translate the content in the given language."""
 
     if language == "automatic":
@@ -207,12 +230,15 @@ def translate_content(dict_content, cv_text:str, language:str="automatic", *,lan
     if language == "english":
         return dict_content
     else:
-        translated_content = chat(f"""Translate the values of the following json in : {language}  
+        translated_content = chat(
+            f"""Translate the values of the following json in : {language}  
                                             Keep the keys as they are and translate the values. Return the translated json.
                                             Do not translate 'none'.
                                             Keep json fromat (double quotes).
-                                            Content: {str(dict_content)} """)
+                                            Content: {str(dict_content)} """
+        )
     return json.loads(translated_content)
+
 
 @provides("labeled_optional_content")
 def has_content_labelling(dict_content, optional_content: List[str]):
@@ -225,12 +251,15 @@ def has_content_labelling(dict_content, optional_content: List[str]):
                 updated_content["has_" + k] = False
             else:
                 updated_content["has_" + k] = True
-    
+
     return updated_content
+
 
 def bytes_content(dict_content):
     import json
-    return json.dumps(dict_content).encode('utf-8')
+
+    return json.dumps(dict_content).encode("utf-8")
+
 
 # def retrieve_one(label, prompt=None, inplace=True):
 #     """Retrieve the information for the given label and put it in the dict_content if inplace is True. Else return the content."""
@@ -243,10 +272,12 @@ def bytes_content(dict_content):
 #         self.dict_content.update(new_content)
 #     return new_content
 
+
 def save_content(dict_content, save_path):
     """Save the information in a json file."""
     with open(save_path, "w") as f:
         json.dump(dict_content, f)
+
 
 def load_content(content_path):
     """Load the information from a json file."""
@@ -254,12 +285,12 @@ def load_content(content_path):
         dict_content = json.load(f)
     return dict_content
 
+
 @provides("labeled_empty_content")
-def label_empty_content(
-    dict_content: dict, empty_label: str
-):  
+def label_empty_content(dict_content: dict, empty_label: str):
     updated_content = dict_content.copy()
     return replace_none_in_json(updated_content, empty_label)
+
 
 def print_content(dict_content, content_label=None):
     if content_label is not None:
@@ -279,10 +310,10 @@ def print_content(dict_content, content_label=None):
     #     dict_content = self.dict_content
     #     dict_content = self.label_empty_content(dict_content, self.empty_label)
     #     return dict_content
-    
 
 
 from typing import Mapping
+
 
 @dataclass
 class TemplateFiller:
@@ -311,6 +342,7 @@ class TemplateFiller:
 
     def __call__(self, save_path):
         self.save_template(save_path)
+
 
 def template_bytes(template_path: str, content: Mapping):
     """Return the bytes of the filled template."""
