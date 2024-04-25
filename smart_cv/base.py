@@ -1,17 +1,24 @@
 """Base objects for the smart_cv package."""
 
 from dol import Files, add_ipython_key_completions, wrap_kvs
-from smart_cv.util import extension_base_wrap, pkg_defaults, extension_base_encoding, get_config as config_getter_factory
+from raglab.retrieval.lib_alexis import (
+    extension_base_wrap,
+    extension_base_encoding,
+    get_config as config_getter_factory,
+)
+
+from smart_cv.util import pkg_defaults, app_filepath, app_config_path, data_dir
+
 import json
 import pathlib
 from i2 import Namespace
 from functools import partial
 from dol import Files
+
 # from config2py import (
 #     user_gettable,
 #     get_config as config_getter_factory,
 # )
-from smart_cv.util import app_filepath, app_config_path, data_dir
 
 
 @add_ipython_key_completions
@@ -24,11 +31,11 @@ class CvsInfoStore(Files):
 
 
 mall = Namespace(
-    data=extension_base_wrap(Files(app_filepath('data'))),
-    cvs=extension_base_wrap(Files(app_filepath('data', 'cvs'))),
-    cvs_info=CvsInfoStore(app_filepath('data', 'cvs_info')),
-    filled=extension_base_wrap(Files(app_filepath('data', 'filled'))),
-    configs=extension_base_wrap(Files(app_filepath('configs'))),
+    data=extension_base_wrap(Files(app_filepath("data"))),
+    cvs=extension_base_wrap(Files(app_filepath("data", "cvs"))),
+    cvs_info=CvsInfoStore(app_filepath("data", "cvs_info")),
+    filled=extension_base_wrap(Files(app_filepath("data", "filled"))),
+    configs=extension_base_wrap(Files(app_filepath("configs"))),
     pkg_data_store=Files(data_dir),
 )
 
@@ -44,11 +51,13 @@ from smart_cv.util import pkg_data_files
 
 default_store = Files(str(pkg_defaults))
 
+
 def populate_local_user_folders(defaults, local_user_folders):
     for k in defaults:
         if k not in local_user_folders:
             local_user_folders[k] = defaults[k]
     return defaults
+
 
 populate_local_user_folders(default_store, mall.configs)
 
@@ -78,14 +87,15 @@ config_sources = [
     mall.configs.rootdir,  # user local configs
     # json.loads(mall.configs['config.json']),  # package config.json
     # json.loads(pathlib.Path(app_config_path).read_text()),  # package config.json
-    #pkg_defaults,  # package defaults
+    # pkg_defaults,  # package defaults
 ]
 
-dflt_config = mall.configs['config.json'] #ChainMap(*config_sources)  # a config mapping
-dflt_stacks = mall.configs['stacks_keywords.txt'].splitlines()
-dflt_json_example = mall.configs['json_example.txt']
+dflt_config = mall.configs[
+    "config.json"
+]  # ChainMap(*config_sources)  # a config mapping
+dflt_stacks = mall.configs["stacks_keywords.txt"].splitlines()
+dflt_json_example = mall.configs["json_example.txt"]
 
 
-
-#a config getter, enhanced by the user_gettable store
+# a config getter, enhanced by the user_gettable store
 get_config = partial(config_getter_factory, sources=[mall.configs])
