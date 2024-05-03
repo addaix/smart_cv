@@ -3,7 +3,6 @@
 from dol import Files, add_ipython_key_completions, wrap_kvs
 from raglab.retrieval.lib_alexis import (
     extension_base_wrap,
-    extension_base_encoding,
     get_config as config_getter_factory,
 )
 

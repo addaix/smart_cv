@@ -1,24 +1,12 @@
 """Utils for smart_cv"""
 
 from importlib.resources import files
-import json
 from functools import partial
-import pdfplumber
-from docx2python import docx2python
-from docx2python.iterators import iter_paragraphs
-from docx import Document
-import tiktoken
 from i2 import Namespace
 from config2py import (
     get_app_data_folder,
     process_path,
 )
-from dol import wrap_kvs, Pipe
-from pypdf import PdfReader
-from msword import bytes_to_doc, get_text_from_docx  # pip install msword
-from io import BytesIO
-import json
-import os
 
 pkg_name = "smart_cv"
 # -----------------------------------------------------------

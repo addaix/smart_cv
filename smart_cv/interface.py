@@ -51,10 +51,10 @@ def cv_content(
     """Returns the filled template"""
     parser = _mk_parser(
         cv_text=cv_text,
-        language=language,
+        # language=language,
         chunk_overlap=chunk_overlap,
         temperature=temperature,
-        empty_label=empty_label,
+        # empty_label=empty_label,
     )
     content = parser()
 

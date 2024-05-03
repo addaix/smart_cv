@@ -152,13 +152,13 @@ class ContentRetriever:
             for k, v in d.items():
                 if k in result:
                     result[k] = self.chat(
-                        f"Aggregate content the 2 following contents without repetitions: {str(result[k])} and {str(v)}"
+                        f"Aggregate the 2 following contents without repetitions: {str(result[k])} and {str(v)}"
                     )
                 else:
                     result[k] = v
         return result
 
-    def retrieve_content(self, json_string: str = None, inplace=True, verbose=False):
+    def retrieve_content(self, json_string: str = None, inplace=True):
         """Given a mapping of information to retrieve, retrieve all the information and put it in the dict_content.
         example:    mapping = {"JobTitle": "Give the job title of the candidate",
                             "avaibility": "When is the candidate available to start" }
