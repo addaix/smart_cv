@@ -31,6 +31,7 @@ class CvsInfoStore(Files):
 
 mall = Namespace(
     data=extension_base_wrap(Files(app_filepath("data"))),
+    stack_mining=extension_base_wrap(Files(app_filepath("data", "stacks_mining"))),
     cvs=extension_base_wrap(Files(app_filepath("data", "cvs"))),
     cvs_info=CvsInfoStore(app_filepath("data", "cvs_info")),
     filled=extension_base_wrap(Files(app_filepath("data", "filled"))),
