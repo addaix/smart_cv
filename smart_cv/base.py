@@ -2,7 +2,7 @@
 
 from dol import Files, add_ipython_key_completions, wrap_kvs
 from raglab.retrieval.lib_alexis import (
-    extension_base_wrap,
+    extension_based_wrap,
     get_config as config_getter_factory,
 )
 
@@ -30,12 +30,12 @@ class CvsInfoStore(Files):
 
 
 mall = Namespace(
-    data=extension_base_wrap(Files(app_filepath("data"))),
-    stack_mining=extension_base_wrap(Files(app_filepath("data", "stacks_mining"))),
-    cvs=extension_base_wrap(Files(app_filepath("data", "cvs"))),
+    data=extension_based_wrap(Files(app_filepath("data"))),
+    stack_mining=extension_based_wrap(Files(app_filepath("data", "stacks_mining"))),
+    cvs=extension_based_wrap(Files(app_filepath("data", "cvs"))),
     cvs_info=CvsInfoStore(app_filepath("data", "cvs_info")),
-    filled=extension_base_wrap(Files(app_filepath("data", "filled"))),
-    configs=extension_base_wrap(Files(app_filepath("configs"))),
+    filled=extension_based_wrap(Files(app_filepath("data", "filled"))),
+    configs=extension_based_wrap(Files(app_filepath("configs"))),
     pkg_data_store=Files(data_dir),
 )
 
