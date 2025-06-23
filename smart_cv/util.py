@@ -2,7 +2,7 @@
 
 from importlib.resources import files
 from functools import partial
-from i2 import AttributeMapping
+from i2 import AttributeMutableMapping
 from config2py import (
     get_app_data_folder,
     process_path,
