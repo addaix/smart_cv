@@ -10,7 +10,7 @@ from smart_cv.util import pkg_defaults, app_filepath, app_config_path, data_dir
 
 import json
 import pathlib
-from i2 import Namespace
+from i2 import AttributeMapping
 from functools import partial
 from dol import Files
 
@@ -29,7 +29,7 @@ class CvsInfoStore(Files):
         super().__init__(rootdir, *args, **kwargs)
 
 
-mall = Namespace(
+mall = AttributeMapping(
     data=extension_based_wrap(Files(app_filepath("data"))),
     stack_mining=extension_based_wrap(Files(app_filepath("data", "stacks_mining"))),
     cvs=extension_based_wrap(Files(app_filepath("data", "cvs"))),
