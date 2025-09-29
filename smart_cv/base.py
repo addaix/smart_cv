@@ -55,7 +55,10 @@ default_store = Files(str(pkg_defaults))
 def populate_local_user_folders(defaults, local_user_folders):
     for k in defaults:
         if k not in local_user_folders:
-            local_user_folders[k] = defaults[k]
+            try:
+                local_user_folders[k] = defaults[k].read_bytes()
+            except Exception:
+                print(f"Could not read default for {k}, skipping...")
     return defaults
 
 
@@ -90,12 +93,14 @@ config_sources = [
     # pkg_defaults,  # package defaults
 ]
 
-dflt_config = mall.configs[
-    "config.json"
-]  # ChainMap(*config_sources)  # a config mapping
-dflt_stacks = mall.configs["stacks_keywords.txt"].splitlines()
-dflt_json_example = mall.configs["json_example.txt"]
+# TODO: Recover (the commented out lines below isn't working)
+# dflt_config = mall.configs.get("config.json", {})  # or? ChainMap(*config_sources)  # a config mapping
+dflt_config = {}
+# dflt_stacks = mall.configs["stacks_keywords.txt"].splitlines()
+dflt_stacks = []
 
+# dflt_json_example = mall.configs["json_example.txt"]
+dflt_json_example = {}
 
 # a config getter, enhanced by the user_gettable store
 get_config = partial(config_getter_factory, sources=[mall.configs])
