@@ -4,7 +4,7 @@ from importlib.resources import files
 from functools import partial
 from i2 import AttributeMutableMapping
 from config2py import (
-    get_app_data_folder,
+    get_app_config_folder,
     process_path,
 )
 
@@ -22,7 +22,7 @@ pkg_defaults = pkg_data_files / "defaults"
 
 
 # The "app folder" way
-app_dir = get_app_data_folder(pkg_name, ensure_exists=True)
+app_dir = get_app_config_folder(pkg_name, ensure_exists=True)
 app_filepath = partial(process_path, ensure_dir_exists=True, rootdir=app_dir)
 data_dir = app_filepath("data")
 configs_dir = app_filepath("configs")
