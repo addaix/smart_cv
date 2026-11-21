@@ -21,7 +21,7 @@ from dol import Files
 
 
 @add_ipython_key_completions
-@wrap_kvs(obj_of_data=json.loads)  # TODO add reading function for Docx files
+@wrap_kvs(value_decoder=json.loads)  # TODO add reading function for Docx files
 class CvsInfoStore(Files):
     """Get cv info dicts from folder"""
 
